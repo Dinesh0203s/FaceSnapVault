@@ -13,8 +13,10 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import PhotoUpload from "@/components/PhotoUpload";
 import PhotoGallery from "@/components/PhotoGallery";
+import BulkPhotoUpload from "@/components/BulkPhotoUpload";
+import EventEditDialog from "@/components/EventEditDialog";
 import { insertEventSchema, Event, Photo } from "@shared/schema";
-import { Calendar, Users, Images, CheckCircle, Plus, Edit, Upload, Trash2 } from "lucide-react";
+import { Calendar, Users, Images, CheckCircle, Plus, Edit, Upload, Trash2, Settings, Eye } from "lucide-react";
 import { z } from "zod";
 
 const eventFormSchema = insertEventSchema.extend({
@@ -51,7 +53,12 @@ export default function AdminDashboard() {
   }
 
   // Fetch admin stats
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{
+    totalEvents: number;
+    totalPhotos: number;
+    activeUsers: number;
+    successfulMatches: number;
+  }>({
     queryKey: ["/api/admin/stats"],
     enabled: user?.role === "admin",
   });
@@ -71,7 +78,6 @@ export default function AdminDashboard() {
   // Create event mutation
   const createEventMutation = useMutation({
     mutationFn: async (values: EventFormValues) => {
-      const token = await firebaseUser!.getIdToken();
       return apiRequest("POST", "/api/admin/events", {
         ...values,
         createdBy: user!.id,
@@ -85,6 +91,7 @@ export default function AdminDashboard() {
         description: "Your new event is now active",
       });
       setShowCreateEvent(false);
+      form.reset();
     },
     onError: (error: any) => {
       toast({
@@ -95,15 +102,37 @@ export default function AdminDashboard() {
     },
   });
 
+  // Update event mutation
+  const updateEventMutation = useMutation({
+    mutationFn: async ({ eventId, values }: { eventId: number; values: EventFormValues }) => {
+      return apiRequest("PUT", `/api/admin/events/${eventId}`, values);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      toast({
+        title: "Event updated successfully",
+        description: "Event details have been saved",
+      });
+      setSelectedEvent(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update event",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Delete event mutation
   const deleteEventMutation = useMutation({
     mutationFn: async (eventId: number) => {
-      const token = await firebaseUser!.getIdToken();
       return apiRequest("DELETE", `/api/admin/events/${eventId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setSelectedEvent(null);
       toast({
         title: "Event deleted successfully",
       });
@@ -111,6 +140,27 @@ export default function AdminDashboard() {
     onError: (error: any) => {
       toast({
         title: "Failed to delete event",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete photo mutation
+  const deletePhotoMutation = useMutation({
+    mutationFn: async (photoId: number) => {
+      return apiRequest("DELETE", `/api/admin/photos/${photoId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events", selectedEvent?.id, "photos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Photo deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delete photo",
         description: error.message,
         variant: "destructive",
       });
