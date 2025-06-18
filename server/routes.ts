@@ -122,9 +122,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile(path.join(publicPath, 'sw.js'));
   });
   
-  // Serve uploaded files
+  // Serve uploaded files with proper MIME types
   const uploadsPath = path.resolve(process.cwd(), 'uploads');
-  app.use('/uploads', express.static(uploadsPath));
+  app.use('/uploads', (req, res, next) => {
+    const filePath = path.join(uploadsPath, req.path);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).send('File not found');
+    }
+
+    // Read first few bytes to detect image type
+    try {
+      const buffer = fs.readFileSync(filePath, { encoding: null, flag: 'r' });
+      let mimeType = 'application/octet-stream';
+      
+      // Detect image type from file signature
+      if (buffer.length >= 3) {
+        // JPEG
+        if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+          mimeType = 'image/jpeg';
+        }
+        // PNG
+        else if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+          mimeType = 'image/png';
+        }
+        // GIF
+        else if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
+          mimeType = 'image/gif';
+        }
+        // WebP
+        else if (buffer.length >= 12 && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+          mimeType = 'image/webp';
+        }
+        // Default to JPEG for uploaded photos
+        else {
+          mimeType = 'image/jpeg';
+        }
+      }
+      
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+      res.sendFile(filePath);
+    } catch (error) {
+      console.error('Error serving uploaded file:', error);
+      res.status(500).send('Error serving file');
+    }
+  });
 
   // Auth routes
   app.get('/api/auth/me', authenticateUser, async (req: any, res) => {
