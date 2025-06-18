@@ -27,14 +27,14 @@ export default function Navigation() {
 
   const NavLink = ({ href, label, onClick }: { href: string; label: string; onClick?: () => void }) => (
     <Link href={href}>
-      <a
-        className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ${
+      <span
+        className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer ${
           location === href ? "text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800" : ""
         }`}
         onClick={onClick}
       >
         {label}
-      </a>
+      </span>
     </Link>
   );
 
@@ -44,10 +44,10 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/">
-            <a className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 cursor-pointer">
               <Camera className="text-2xl text-blue-600" />
               <span className="text-xl font-bold">FaceSnapVault</span>
-            </a>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
@@ -73,9 +73,9 @@ export default function Navigation() {
             ) : (
               <div className="flex items-center space-x-2 ml-4">
                 <Link href="/login">
-                  <a className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-3 py-2">
+                  <span className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-3 py-2 cursor-pointer">
                     Login
-                  </a>
+                  </span>
                 </Link>
                 <Link href="/signup">
                   <Button size="sm">Sign Up</Button>
