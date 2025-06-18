@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>FaceSnapVault - Smart Event Photo Retrieval</title>
+    <meta name="description" content="Find yourself in event photos instantly using advanced facial recognition. Fast, secure, and accurate photo retrieval with Google Cloud Vision API." />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://facesnapvault.com/" />
+    <meta property="og:title" content="FaceSnapVault - Smart Event Photo Retrieval" />
+    <meta property="og:description" content="Find yourself in event photos instantly using advanced facial recognition. Fast, secure, and accurate photo retrieval with Google Cloud Vision API." />
+    <meta property="og:image" content="https://facesnapvault.com/og-image.jpg" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://facesnapvault.com/" />
+    <meta property="twitter:title" content="FaceSnapVault - Smart Event Photo Retrieval" />
+    <meta property="twitter:description" content="Find yourself in event photos instantly using advanced facial recognition. Fast, secure, and accurate photo retrieval with Google Cloud Vision API." />
+    <meta property="twitter:image" content="https://facesnapvault.com/og-image.jpg" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/camera-icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    
+    <!-- Preconnect to external domains for better performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Font loading -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    
+    <!-- Additional meta tags for SEO -->
+    <meta name="keywords" content="facial recognition, event photos, photo retrieval, AI photo search, face matching, event photography, photo finder" />
+    <meta name="author" content="FaceSnapVault Team" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Structured data for search engines -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "FaceSnapVault",
+      "description": "Smart event photo retrieval using facial recognition technology",
+      "url": "https://facesnapvault.com",
+      "applicationCategory": "Photography",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "FaceSnapVault",
+        "url": "https://facesnapvault.com"
+      }
+    }
+    </script>
+    
+    <!-- Security headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    
+    <!-- Performance and caching -->
+    <meta http-equiv="Cache-Control" content="public, max-age=31536000" />
+    
+    <!-- PWA support -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <style>
+      /* Prevent FOUC (Flash of Unstyled Content) */
+      html {
+        visibility: hidden;
+        opacity: 0;
+      }
+      
+      /* Loading screen styles */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.3s ease-out;
+      }
+      
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e5e7eb;
+        border-top: 4px solid #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* Show content once loaded */
+      .loaded {
+        visibility: visible;
+        opacity: 1;
+      }
+      
+      /* Dark mode support for loading screen */
+      @media (prefers-color-scheme: dark) {
+        .loading-screen {
+          background: #111827;
+        }
+        .loading-spinner {
+          border-color: #374151;
+          border-top-color: #3b82f6;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loading screen -->
+    <div class="loading-screen" id="loading-screen">
+      <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Main app container -->
+    <div id="root"></div>
+    
+    <!-- Main application script -->
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Remove loading screen once app loads -->
+    <script>
+      window.addEventListener('load', function() {
+        const loadingScreen = document.getElementById('loading-screen');
+        const html = document.documentElement;
+        
+        setTimeout(() => {
+          html.classList.add('loaded');
+          if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+              loadingScreen.remove();
+            }, 300);
+          }
+        }, 100);
+      });
+      
+      // Handle theme preference on initial load
+      (function() {
+        const theme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (theme === 'dark' || (!theme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+    
+    <!-- Service Worker registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+              console.log('SW registered: ', registration);
+            })
+            .catch(function(registrationError) {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+    
+    <!-- Replit development banner script -->
+    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+  </body>
+</html>
