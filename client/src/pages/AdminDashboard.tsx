@@ -186,6 +186,14 @@ export default function AdminDashboard() {
   const onSubmit = (values: EventFormValues) => {
     console.log('Form submitted with values:', values);
     console.log('User:', user);
+    console.log('Form errors:', form.formState.errors);
+    console.log('Form is valid:', form.formState.isValid);
+    
+    if (!form.formState.isValid) {
+      console.log('Form validation failed, not submitting');
+      return;
+    }
+    
     createEventMutation.mutate(values);
   };
 
