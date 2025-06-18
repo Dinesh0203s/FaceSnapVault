@@ -1,0 +1,187 @@
+📸 Project Title: FaceSnapVault
+“Scan your face, get your event photos instantly — fast, secure, and accurate with Google Cloud Vision.”
+
+🎯 Core Goal
+Build a smart photo retrieval web app that:
+
+Uses Google Cloud Vision API to detect faces.
+
+Stores face vectorsit
+
+Minimizes face match API calls by doing offline face comparison using local vector storage.
+
+Uses Firebasefor aut
+
+Sends matched photos via email and allows viewing in the user dashboard.
+
+💡 Key Features
+1. 🔐 Login / Signup System
+Firebase
+
+Store use
+
+Role
+
+2. 🧑‍💻 User Flow
+User logs in and uploads a selfie and enters the this.
+
+Backend loads all face embeddings of that event from local DB.
+
+Match
+
+END
+
+Mother
+
+Displays them in their dashboard.
+
+3. 📸 Photographer / Admin Upload
+Upload photo → Detect all faces using Google Cloud Vision API (one-time only)
+
+Store:
+
+Face vector for each face
+
+Photo ID + URL
+
+Face bou
+
+Save face vectors in a local vector DB or JSON/SQLitefile for
+
+4. 🧠 Fac
+Use Google Vision only for initial face vector extraction
+
+Store vectors as .npy or pickle or JSON files
+
+When selfie is uploaded:
+
+With
+
+Compare with local vectors using cosine similarity
+
+No repeated Google API calls = fast + cost-efficient
+
+5. 📂 User Profile
+Stores:
+
+List of matched photos
+
+History of scanned selfies
+
+Re-download or re-match for past events
+
+Can delete account or photos
+
+6. 🛠️ Admin Panel
+Upl
+
+Give
+
+Manually verify misclassified matches
+
+We
+
+🧱 Technology Stack
+Part	Tech
+Frontend	Yes
+Auth	Firebase Auth
+Great	F
+Make Of	Google Cloud Vision API
+Face Matching	Locally using Python + NumPy (cosine similarity)
+Bake	Puddle
+Database	PostgreSQL or SQLite for storing photo metadata + face vectors
+In	SendGrid or EmailJS
+With	Truth
+
+🗃️ Database Schema (PostgreSQL / SQLite)
+users
+sql
+
+Copy
+
+Edit
+id | email | name | photo_history[] | created_at
+events
+sql
+
+Copy
+
+Edit
+id | name | code | created_by | created_at
+photos
+sql
+
+Copy
+
+Edit
+id | event_id | url | face_vectors[] | created_at
+face_vectors
+sql
+
+Copy
+
+Edit
+id | photo_id | vector JSONB | face_box JSON | person_label | created_at
+📁 Local Face Vector Storage (per event)
+Example: storage/event_kit24_faces.json
+
+json
+
+Copy
+
+Edit
+[
+  {
+    "photo_id": "abc123",
+    "vector": [0.12, 0.33, 0.48, ...],
+    "photo_url": "https://...",
+    "bounding_box": [x, y, w, h]
+  },
+  ...
+]
+🚀 Optimize
+🧠 Cache a using Redis or Python dicts.
+
+💾 Store user selfie vectors and avoid duplicate uploads (hashed comparison).
+
+🔍 Only compare against faces from selected event.
+
+📉 Pre-compute and store cosine similarity if needed for batch jobs.
+
+🖼️ Pages in the App
+Route	Description
+/	Country
+/login	Fireba
+/signup	Be
+/dashboard	View matched photos, upload selfie
+/upload-selfie	Upl
+/admin	Admin upload and stats
+/profile	View/delete old matches
+
+🔐 Privacy & Data Security
+Selfies and embeddings are not reused.
+
+Only embeddings are stored (not raw face images).
+
+Option to let users delete face data.
+
+All data encrypted at rest (Firebase or PostgreSQL).
+
+✅ To-Do List
+Task	Tool
+Setup Firebase login	Firebase Auth
+Create Next.js frontend	Next.js + Tailwind
+Setup photo upload + Vision API	Google Vision + Firebase Storage
+Build local vector match API	Python + NumPy
+Create user dashboard	React Query + Firebase Firestore
+Email matched photos	SendGrid or EmailJS
+
+Would you like me to:
+
+Give you the Firebase + Next.js starter boilerplate?
+
+Write the Google Vision + vector matching backend in Python?
+
+Create the DB schema and JSON format for local vectors?
+
+👉 Just tell me what part to start with!
