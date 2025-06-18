@@ -99,6 +99,15 @@ function requireAdmin(req: any, res: any, next: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Serve static files from client/public directory
+  const publicPath = path.resolve(process.cwd(), 'client', 'public');
+  app.use('/manifest.json', (req, res) => {
+    res.sendFile(path.join(publicPath, 'manifest.json'));
+  });
+  app.use('/sw.js', (req, res) => {
+    res.sendFile(path.join(publicPath, 'sw.js'));
+  });
+
   // Auth routes
   app.get('/api/auth/me', authenticateUser, async (req: any, res) => {
     res.json(req.user);
