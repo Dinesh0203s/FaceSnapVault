@@ -215,8 +215,8 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
 
-  async createEventAccess(eventAccess: InsertEventAccess): Promise<EventAccess> {
-    const [newEventAccess] = await db.insert(eventAccess).values(eventAccess).returning();
+  async createEventAccess(eventAccessData: InsertEventAccess): Promise<EventAccess> {
+    const [newEventAccess] = await db.insert(eventAccess).values(eventAccessData).returning();
     return newEventAccess;
   }
 
