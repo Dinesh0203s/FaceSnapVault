@@ -27,7 +27,7 @@ export default function PhotoGallery({ photos, columns = 4, eventId, showDeleteB
       return apiRequest("DELETE", `/api/admin/photos/${photoId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "photos"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/events/${eventId}/photos`] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       setSelectedPhoto(null);
       toast({

@@ -20,7 +20,7 @@ export default function EventGallery() {
 
   // Fetch event photos
   const { data: photos = [], isLoading } = useQuery<Photo[]>({
-    queryKey: ["/api/events", eventId, "photos"],
+    queryKey: [`/api/events/${eventId}/photos`],
     enabled: !!eventId,
   });
 
