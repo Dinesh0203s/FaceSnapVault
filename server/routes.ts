@@ -191,6 +191,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk photo upload route
+  app.post('/api/admin/photos/upload', authenticateUser, requireAdmin, upload.array('photos', 50), async (req: any, res) => {
+    try {
+      const { eventId } = req.body;
+      const files = req.files as Express.Multer.File[];
+      
+      if (!files || files.length === 0) {
+        return res.status(400).json({ message: 'No photos uploaded' });
+      }
+
+      if (!eventId) {
+        return res.status(400).json({ message: 'Event ID is required' });
+      }
+
+      const uploadedPhotos = [];
+      
+      for (const file of files) {
+        // Create photo record
+        const photo = await storage.createPhoto({
+          eventId: parseInt(eventId),
+          filename: file.originalname,
+          url: `/uploads/${file.filename}`,
+          uploadedBy: req.user.id,
+          processed: false,
+        });
+
+        // Process with Google Vision API in background
+        processPhotoWithVision(file.path, photo.id).catch(console.error);
+        
+        uploadedPhotos.push(photo);
+      }
+
+      res.status(201).json({ 
+        message: `${uploadedPhotos.length} photos uploaded successfully`,
+        photos: uploadedPhotos 
+      });
+    } catch (error) {
+      console.error('Error uploading photos:', error);
+      res.status(500).json({ message: 'Failed to upload photos' });
+    }
+  });
+
   // Photo upload route
   app.post('/api/admin/events/:id/photos', authenticateUser, requireAdmin, upload.array('photos', 50), async (req: any, res) => {
     try {
@@ -285,6 +327,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error matching faces:', error);
       res.status(500).json({ message: 'Failed to match faces' });
+    }
+  });
+
+  // Delete photo route
+  app.delete('/api/admin/photos/:id', authenticateUser, requireAdmin, async (req: any, res) => {
+    try {
+      const photoId = parseInt(req.params.id);
+      const success = await storage.deletePhoto(photoId);
+      
+      if (!success) {
+        return res.status(404).json({ message: 'Photo not found' });
+      }
+      
+      res.json({ message: 'Photo deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+      res.status(500).json({ message: 'Failed to delete photo' });
     }
   });
 

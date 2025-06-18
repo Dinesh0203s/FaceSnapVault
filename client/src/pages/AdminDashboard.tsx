@@ -33,6 +33,8 @@ export default function AdminDashboard() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [showUploadPhotos, setShowUploadPhotos] = useState<Event | null>(null);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [showBulkUpload, setShowBulkUpload] = useState<Event | null>(null);
 
   // Redirect if not admin
   if (user?.role !== "admin") {
@@ -355,14 +357,24 @@ export default function AdminDashboard() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setSelectedEvent(event)}
+                      onClick={() => setEditingEvent(event)}
+                      title="Edit Event"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setShowUploadPhotos(event)}
+                      onClick={() => setSelectedEvent(event)}
+                      title="View Photos"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowBulkUpload(event)}
+                      title="Bulk Upload"
                     >
                       <Upload className="h-4 w-4" />
                     </Button>
@@ -370,11 +382,12 @@ export default function AdminDashboard() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        if (confirm(`Are you sure you want to delete "${event.name}"?`)) {
+                        if (confirm(`Are you sure you want to delete "${event.name}"? This will also delete all photos in this event.`)) {
                           deleteEventMutation.mutate(event.id);
                         }
                       }}
                       className="text-red-600 hover:text-red-700"
+                      title="Delete Event"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -395,20 +408,28 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Photo Upload Modal */}
-        <Dialog open={!!showUploadPhotos} onOpenChange={() => setShowUploadPhotos(null)}>
-          <DialogContent className="max-w-2xl">
+        {/* Event Edit Dialog */}
+        <EventEditDialog
+          event={editingEvent}
+          open={!!editingEvent}
+          onOpenChange={(open) => !open && setEditingEvent(null)}
+        />
+
+        {/* Bulk Photo Upload Dialog */}
+        <Dialog open={!!showBulkUpload} onOpenChange={() => setShowBulkUpload(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Upload Photos to {showUploadPhotos?.name}</DialogTitle>
+              <DialogTitle>Bulk Upload Photos to {showBulkUpload?.name}</DialogTitle>
             </DialogHeader>
-            {showUploadPhotos && (
-              <PhotoUpload
-                eventId={showUploadPhotos.id}
+            {showBulkUpload && (
+              <BulkPhotoUpload
+                eventId={showBulkUpload.id}
                 onUploadComplete={() => {
                   queryClient.invalidateQueries({ 
-                    queryKey: ["/api/events", showUploadPhotos.id, "photos"] 
+                    queryKey: ["/api/events", showBulkUpload.id, "photos"] 
                   });
                   queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+                  setShowBulkUpload(null);
                 }}
               />
             )}
@@ -419,13 +440,71 @@ export default function AdminDashboard() {
         {selectedEvent && (
           <Card>
             <CardHeader>
-              <CardTitle>{selectedEvent.name} - Photos</CardTitle>
-              <CardDescription>
-                Manage photos for this event
-              </CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>{selectedEvent.name} - Photos</CardTitle>
+                  <CardDescription>
+                    Manage photos for this event ({eventPhotos.length} photos)
+                  </CardDescription>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowBulkUpload(selectedEvent)}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Add More Photos
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedEvent(null)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <PhotoGallery photos={eventPhotos} />
+              {eventPhotos.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {eventPhotos.map((photo) => (
+                    <div key={photo.id} className="relative group">
+                      <img
+                        src={photo.url}
+                        alt={photo.filename}
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all rounded-lg flex items-center justify-center">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => {
+                            if (confirm(`Delete ${photo.filename}?`)) {
+                              deletePhotoMutation.mutate(photo.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 truncate">{photo.filename}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Images className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No photos yet</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Upload photos to this event to get started
+                  </p>
+                  <Button onClick={() => setShowBulkUpload(selectedEvent)}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Photos
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
