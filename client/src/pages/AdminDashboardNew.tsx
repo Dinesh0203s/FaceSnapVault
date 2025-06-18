@@ -273,6 +273,8 @@ export default function AdminDashboard() {
                 <PhotoGallery 
                   photos={photos} 
                   columns={4}
+                  eventId={selectedEvent.id}
+                  showDeleteButton={true}
                 />
               )}
             </CardContent>

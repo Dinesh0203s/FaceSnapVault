@@ -115,6 +115,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteEvent(id: number): Promise<boolean> {
+    // First delete all photos associated with this event
+    await db.delete(photos).where(eq(photos.eventId, id));
+    
+    // Then delete the event
     const result = await db.delete(events).where(eq(events.id, id));
     return result.rowCount > 0;
   }

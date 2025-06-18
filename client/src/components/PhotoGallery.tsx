@@ -1,16 +1,47 @@
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Photo } from "@shared/schema";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/contexts/AuthContext";
+import { Download, X, Trash2 } from "lucide-react";
 
 interface PhotoGalleryProps {
   photos: Photo[];
   columns?: number;
+  eventId?: number;
+  showDeleteButton?: boolean;
 }
 
-export default function PhotoGallery({ photos, columns = 4 }: PhotoGalleryProps) {
+export default function PhotoGallery({ photos, columns = 4, eventId, showDeleteButton = false }: PhotoGalleryProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Delete photo mutation
+  const deletePhotoMutation = useMutation({
+    mutationFn: async (photoId: number) => {
+      return apiRequest("DELETE", `/api/admin/photos/${photoId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "photos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setSelectedPhoto(null);
+      toast({
+        title: "Photo deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delete photo",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const downloadPhoto = (photo: Photo) => {
     const link = document.createElement('a');
@@ -19,6 +50,12 @@ export default function PhotoGallery({ photos, columns = 4 }: PhotoGalleryProps)
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const deletePhoto = (photo: Photo) => {
+    if (confirm(`Are you sure you want to delete ${photo.filename}?`)) {
+      deletePhotoMutation.mutate(photo.id);
+    }
   };
 
   const getGridCols = () => {
@@ -101,14 +138,27 @@ export default function PhotoGallery({ photos, columns = 4 }: PhotoGalleryProps)
                       {new Date(selectedPhoto.createdAt).toLocaleString()}
                     </p>
                   </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => downloadPhoto(selectedPhoto)}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => downloadPhoto(selectedPhoto)}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </Button>
+                    {showDeleteButton && user?.role === 'admin' && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deletePhoto(selectedPhoto)}
+                        disabled={deletePhotoMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {deletePhotoMutation.isPending ? "Deleting..." : "Delete"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
