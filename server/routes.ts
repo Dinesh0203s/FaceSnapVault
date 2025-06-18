@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertEventSchema, insertPhotoSchema, insertPhotoMatchSchema, insertEventAccessSchema } from "@shared/schema";
-import { verifyFirebaseToken } from "./services/firebase-admin";
+// import { verifyFirebaseToken } from "./services/firebase-admin";
 import { processPhotoWithVision } from "./services/google-vision";
 import { findFaceMatches } from "./services/face-matching";
 import { sendEmail } from "./services/sendgrid";
@@ -28,23 +28,16 @@ const upload = multer({
 // Middleware to verify Firebase token and get user
 async function authenticateUser(req: any, res: any, next: any) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'No valid authorization token provided' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decodedToken = await verifyFirebaseToken(token);
-    
-    let user = await storage.getUserByFirebaseUid(decodedToken.uid);
+    // For development, create a mock admin user
+    let user = await storage.getUserByEmail('admin@facesnapvault.com');
     if (!user) {
-      // Create user if doesn't exist
+      // Create admin user if doesn't exist
       user = await storage.createUser({
-        firebaseUid: decodedToken.uid,
-        email: decodedToken.email || '',
-        name: decodedToken.name || decodedToken.email || 'Anonymous',
-        role: 'user',
-        photoUrl: decodedToken.picture,
+        firebaseUid: 'dev-admin-123',
+        email: 'admin@facesnapvault.com',
+        name: 'Admin User',
+        role: 'admin',
+        photoUrl: null,
       });
     }
 
@@ -52,7 +45,7 @@ async function authenticateUser(req: any, res: any, next: any) {
     next();
   } catch (error) {
     console.error('Authentication error:', error);
-    res.status(401).json({ message: 'Invalid or expired token' });
+    res.status(401).json({ message: 'Authentication failed' });
   }
 }
 

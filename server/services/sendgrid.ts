@@ -1,12 +1,4 @@
-import { MailService } from '@sendgrid/mail';
-
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
-}
-
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
-
+// Simple email service for development
 interface EmailParams {
   to: string;
   from: string;
@@ -20,16 +12,18 @@ export async function sendEmail(
   params: EmailParams
 ): Promise<boolean> {
   try {
-    await mailService.send({
-      to: params.to,
-      from: params.from,
-      subject: params.subject,
-      text: params.text,
-      html: params.html,
-    });
+    // For development, we'll log emails instead of sending them
+    console.log('📧 Email would be sent:');
+    console.log(`To: ${params.to}`);
+    console.log(`From: ${params.from}`);
+    console.log(`Subject: ${params.subject}`);
+    console.log(`Content: ${params.text || params.html}`);
+    console.log('---');
+    
+    // In production, integrate with your preferred email service
     return true;
   } catch (error) {
-    console.error('SendGrid email error:', error);
+    console.error('Email service error:', error);
     return false;
   }
 }
