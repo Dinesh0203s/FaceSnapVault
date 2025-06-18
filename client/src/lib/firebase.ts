@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAiARPbRUfUjY8dagq-yDtN0HC12o8X89U",
@@ -17,9 +17,22 @@ export const auth = getAuth(app);
 
 // Google Auth Provider
 const provider = new GoogleAuthProvider();
+provider.addScope('email');
+provider.addScope('profile');
 
-// Sign in with Google redirect
-export function signInWithGoogle() {
+// Sign in with Google popup (better for development)
+export async function signInWithGoogle() {
+  try {
+    const result = await signInWithPopup(auth, provider);
+    return result;
+  } catch (error) {
+    console.error('Error signing in with Google:', error);
+    throw error;
+  }
+}
+
+// Fallback redirect method
+export function signInWithGoogleRedirect() {
   return signInWithRedirect(auth, provider);
 }
 
