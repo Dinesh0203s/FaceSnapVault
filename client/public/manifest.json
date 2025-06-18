@@ -1,0 +1,16 @@
+{
+  "name": "FaceSnapVault",
+  "short_name": "FaceSnapVault",
+  "description": "A secure photo management platform for events with facial recognition matching",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
