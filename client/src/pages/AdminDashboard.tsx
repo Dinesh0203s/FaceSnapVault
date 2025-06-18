@@ -2,12 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -15,23 +9,14 @@ import PhotoUpload from "@/components/PhotoUpload";
 import PhotoGallery from "@/components/PhotoGallery";
 import BulkPhotoUpload from "@/components/BulkPhotoUpload";
 import EventEditDialog from "@/components/EventEditDialog";
-import { insertEventSchema, Event, Photo } from "@shared/schema";
-import { Calendar, Users, Images, CheckCircle, Plus, Edit, Upload, Trash2, Settings, Eye } from "lucide-react";
-import { z } from "zod";
-
-const eventFormSchema = insertEventSchema.extend({
-  name: z.string().min(1, "Event name is required"),
-  code: z.string().min(3, "Event code must be at least 3 characters"),
-  description: z.string().optional(),
-});
-
-type EventFormValues = z.infer<typeof eventFormSchema>;
+import CreateEventForm from "@/components/CreateEventForm";
+import { Event, Photo } from "@shared/schema";
+import { Calendar, Users, Images, CheckCircle, Edit, Upload, Trash2, Settings, Eye } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, firebaseUser } = useAuth();
   const { toast } = useToast();
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [showUploadPhotos, setShowUploadPhotos] = useState<Event | null>(null);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [showBulkUpload, setShowBulkUpload] = useState<Event | null>(null);
@@ -258,95 +243,23 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Event Creation */}
+        <div className="mb-8">
+          <CreateEventForm onSuccess={() => {
+            // Refresh data after successful creation
+            queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+          }} />
+        </div>
+
         {/* Event Management */}
         <Card className="mb-8">
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
                 <CardTitle>Event Management</CardTitle>
-                <CardDescription>Create and manage your events</CardDescription>
+                <CardDescription>Manage your existing events</CardDescription>
               </div>
-              <Dialog open={showCreateEvent} onOpenChange={setShowCreateEvent}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Event
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Event</DialogTitle>
-                  </DialogHeader>
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Event Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Sarah & John's Wedding" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="code"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Event Code</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="WEDDING2024" 
-                                {...field}
-                                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                                className="uppercase"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description (Optional)</FormLabel>
-                            <FormControl>
-                              <Textarea placeholder="Event description..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="flex gap-3 pt-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setShowCreateEvent(false)}
-                          className="flex-1"
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="submit"
-                          className="flex-1"
-                          disabled={createEventMutation.isPending}
-                        >
-                          {createEventMutation.isPending ? "Creating..." : "Create Event"}
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </DialogContent>
-              </Dialog>
             </div>
           </CardHeader>
           
