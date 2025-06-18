@@ -80,12 +80,16 @@ export default function AdminDashboard() {
   // Create event mutation
   const createEventMutation = useMutation({
     mutationFn: async (values: EventFormValues) => {
-      return apiRequest("POST", "/api/admin/events", {
+      console.log('Making API request with values:', values);
+      const response = await apiRequest("POST", "/api/admin/events", {
         ...values,
         createdBy: user!.id,
       });
+      console.log('API response:', response);
+      return response;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Event created successfully:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({
@@ -96,9 +100,10 @@ export default function AdminDashboard() {
       form.reset();
     },
     onError: (error: any) => {
+      console.error('Event creation error:', error);
       toast({
         title: "Failed to create event",
-        description: error.message,
+        description: error.message || "An error occurred",
         variant: "destructive",
       });
     },
@@ -179,6 +184,8 @@ export default function AdminDashboard() {
   });
 
   const onSubmit = (values: EventFormValues) => {
+    console.log('Form submitted with values:', values);
+    console.log('User:', user);
     createEventMutation.mutate(values);
   };
 
