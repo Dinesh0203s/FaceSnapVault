@@ -71,15 +71,28 @@ async function authenticateUser(req: any, res: any, next: any) {
     
     let user = await storage.getUserByFirebaseUid(decodedToken.uid);
     if (!user) {
-      // Create user if doesn't exist - only dond2674@gmail.com gets admin role
-      const role = decodedToken.email === 'dond2674@gmail.com' ? 'admin' : 'user';
-      user = await storage.createUser({
-        firebaseUid: decodedToken.uid,
-        email: decodedToken.email || '',
-        name: decodedToken.name || decodedToken.email || 'User',
-        role: role,
-        photoUrl: decodedToken.picture,
-      });
+      // Check if user exists by email first
+      user = await storage.getUserByEmail(decodedToken.email || '');
+      if (!user) {
+        // Create user if doesn't exist - only dond2674@gmail.com gets admin role
+        const role = decodedToken.email === 'dond2674@gmail.com' ? 'admin' : 'user';
+        try {
+          user = await storage.createUser({
+            firebaseUid: decodedToken.uid,
+            email: decodedToken.email || '',
+            name: decodedToken.name || decodedToken.email || 'User',
+            role: role,
+            photoUrl: decodedToken.picture,
+          });
+        } catch (error: any) {
+          // If user creation fails due to duplicate email, try to get existing user
+          if (error.code === '23505') {
+            user = await storage.getUserByEmail(decodedToken.email || '');
+          } else {
+            throw error;
+          }
+        }
+      }
     }
 
     req.user = user;
@@ -173,16 +186,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/events', authenticateUser, requireAdmin, async (req: any, res) => {
     try {
+      console.log('Create event request body:', req.body);
+      console.log('User:', req.user);
+      
       const eventData = insertEventSchema.parse({
         ...req.body,
         createdBy: req.user.id,
       });
       
+      console.log('Parsed event data:', eventData);
+      
       const event = await storage.createEvent(eventData);
+      console.log('Created event:', event);
       res.status(201).json(event);
     } catch (error) {
       console.error('Error creating event:', error);
-      res.status(500).json({ message: 'Failed to create event' });
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      res.status(500).json({ 
+        message: 'Failed to create event',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
