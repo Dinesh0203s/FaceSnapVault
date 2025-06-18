@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertEventSchema, insertPhotoSchema, insertPhotoMatchSchema, insertEventAccessSchema } from "@shared/schema";
@@ -120,6 +121,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/sw.js', (req, res) => {
     res.sendFile(path.join(publicPath, 'sw.js'));
   });
+  
+  // Serve uploaded files
+  const uploadsPath = path.resolve(process.cwd(), 'uploads');
+  app.use('/uploads', express.static(uploadsPath));
 
   // Auth routes
   app.get('/api/auth/me', authenticateUser, async (req: any, res) => {

@@ -138,8 +138,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePhoto(id: number): Promise<boolean> {
+    // First delete all face vectors associated with this photo
+    await db.delete(faceVectors).where(eq(faceVectors.photoId, id));
+    
+    // Then delete any photo matches
+    await db.delete(photoMatches).where(eq(photoMatches.photoId, id));
+    
+    // Then delete the photo
     const result = await db.delete(photos).where(eq(photos.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async updatePhotoProcessed(id: number, processed: boolean): Promise<boolean> {
