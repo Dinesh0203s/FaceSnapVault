@@ -35,9 +35,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (response.ok) {
             const userData = await response.json();
             setUser(userData);
+          } else {
+            // Create user profile based on Firebase user data
+            const role = firebaseUser.email === 'dond2674@gmail.com' ? 'admin' : 'user';
+            const userProfile: User = {
+              id: Date.now(), // Temporary ID
+              firebaseUid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || firebaseUser.email || 'User',
+              role: role as 'admin' | 'user',
+              photoUrl: firebaseUser.photoURL,
+              createdAt: new Date(),
+            };
+            setUser(userProfile);
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
+          // Fallback to Firebase user data
+          if (firebaseUser.email) {
+            const role = firebaseUser.email === 'dond2674@gmail.com' ? 'admin' : 'user';
+            const userProfile: User = {
+              id: Date.now(),
+              firebaseUid: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: firebaseUser.displayName || firebaseUser.email,
+              role: role as 'admin' | 'user',
+              photoUrl: firebaseUser.photoURL,
+              createdAt: new Date(),
+            };
+            setUser(userProfile);
+          }
         }
       } else {
         setUser(null);

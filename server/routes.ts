@@ -28,16 +28,38 @@ const upload = multer({
 // Middleware to verify Firebase token and get user
 async function authenticateUser(req: any, res: any, next: any) {
   try {
-    // For development, create a mock admin user
-    let user = await storage.getUserByEmail('admin@facesnapvault.com');
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No valid authorization token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    // In production, use: const decodedToken = await verifyFirebaseToken(token);
+    // For now, decode the Firebase JWT payload directly for development
+    let decodedToken;
+    try {
+      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      decodedToken = {
+        uid: payload.user_id || payload.sub,
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture
+      };
+    } catch {
+      return res.status(401).json({ message: 'Invalid token format' });
+    }
+    
+    let user = await storage.getUserByFirebaseUid(decodedToken.uid);
     if (!user) {
-      // Create admin user if doesn't exist
+      // Create user if doesn't exist - only dond2674@gmail.com gets admin role
+      const role = decodedToken.email === 'dond2674@gmail.com' ? 'admin' : 'user';
       user = await storage.createUser({
-        firebaseUid: 'dev-admin-123',
-        email: 'admin@facesnapvault.com',
-        name: 'Admin User',
-        role: 'admin',
-        photoUrl: null,
+        firebaseUid: decodedToken.uid,
+        email: decodedToken.email || '',
+        name: decodedToken.name || decodedToken.email || 'User',
+        role: role,
+        photoUrl: decodedToken.picture,
       });
     }
 
@@ -45,7 +67,7 @@ async function authenticateUser(req: any, res: any, next: any) {
     next();
   } catch (error) {
     console.error('Authentication error:', error);
-    res.status(401).json({ message: 'Authentication failed' });
+    res.status(401).json({ message: 'Invalid or expired token' });
   }
 }
 
