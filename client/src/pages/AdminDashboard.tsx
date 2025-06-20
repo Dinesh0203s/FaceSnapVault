@@ -373,7 +373,16 @@ export default function AdminDashboard() {
                     onClick={() => setShowBulkUpload(selectedEvent)}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Add More Photos
+                    Add Photos
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      window.open(`/admin/events/${selectedEvent.id}/photos`, '_blank');
+                    }}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Photos
                   </Button>
                   <Button
                     variant="outline"

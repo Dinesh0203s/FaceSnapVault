@@ -13,6 +13,7 @@ import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import AdminDashboard from "@/pages/AdminDashboardNew";
 import EventGallery from "@/pages/EventGallery";
+import EventPhotosView from "@/pages/EventPhotosView";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Profile from "@/pages/Profile";
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/signup" component={Login} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/events/:eventId/photos" component={EventPhotosView} />
       <Route path="/events/:id" component={EventGallery} />
       <Route path="/events" component={Home} />
       <Route path="/about" component={About} />
