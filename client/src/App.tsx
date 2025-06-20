@@ -18,6 +18,7 @@ import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/not-found";
+import Events from "@/pages/Events";
 
 function Router() {
   return (
@@ -29,7 +30,7 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/events/:eventId/photos" component={EventPhotosView} />
       <Route path="/events/:id" component={EventGallery} />
-      <Route path="/events" component={Home} />
+      <Route path="/events" component={Events} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
       <Route path="/profile" component={Profile} />
