@@ -14,7 +14,7 @@ import BulkPhotoUpload from "@/components/BulkPhotoUpload";
 import EventEditDialog from "@/components/EventEditDialog";
 import CreateEventForm from "@/components/CreateEventForm";
 import { Event, Photo, insertEventSchema } from "@shared/schema";
-import { Calendar, Users, Images, CheckCircle, Edit, Upload, Trash2, Settings, Eye } from "lucide-react";
+import { Calendar, Users, Images, CheckCircle, Edit, Upload, Trash2, Settings, Eye, Download } from "lucide-react";
 import { z } from "zod";
 
 const eventFormSchema = insertEventSchema.extend({
@@ -385,13 +385,79 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <PhotoGallery 
-                photos={eventPhotos} 
-                columns={4} 
-                eventId={selectedEvent.id}
-                showDeleteButton={true}
-              />
-              {eventPhotos.length === 0 && (
+              {eventPhotos.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {eventPhotos.map((photo) => (
+                    <div key={photo.id} className="group relative overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 aspect-square">
+                      <img
+                        src={photo.url}
+                        alt={photo.filename}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                        onError={(e) => {
+                          console.error('Admin dashboard image failed to load:', photo.url);
+                          const target = e.currentTarget as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.style.backgroundColor = '#ef4444';
+                            parent.innerHTML = `<div class="flex items-center justify-center h-full text-white text-sm">Failed: ${photo.filename}</div>`;
+                          }
+                        }}
+                        onLoad={() => {
+                          console.log('Admin dashboard image loaded:', photo.url);
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = photo.url;
+                              link.download = photo.filename;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                          >
+                            ↓
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={async () => {
+                              if (confirm(`Delete ${photo.filename}?`)) {
+                                try {
+                                  await apiRequest("DELETE", `/api/admin/photos/${photo.id}`);
+                                  queryClient.invalidateQueries({ queryKey: [`/api/events/${selectedEvent.id}/photos`] });
+                                  queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+                                  toast({ title: "Photo deleted successfully" });
+                                } catch (error: any) {
+                                  toast({
+                                    title: "Failed to delete photo",
+                                    description: error.message,
+                                    variant: "destructive",
+                                  });
+                                }
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2">
+                        <p className="text-xs truncate">{photo.filename}</p>
+                        <p className="text-xs opacity-75">
+                          {new Date(photo.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
                 <div className="text-center py-12">
                   <Images className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No photos yet</h3>
