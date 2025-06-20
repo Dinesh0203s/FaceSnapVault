@@ -397,42 +397,31 @@ export default function AdminDashboard() {
               {eventPhotos.length > 0 ? (
                 <div className="space-y-4">
                   <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {eventPhotos.length} photos uploaded - Use "View Photos" button for full gallery
+                    {eventPhotos.length} photos uploaded - Click "View Photos" to open full gallery in new tab
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
-                    {eventPhotos.slice(0, 8).map((photo) => (
-                      <div key={photo.id} className="aspect-square bg-gray-100 dark:bg-gray-800 rounded overflow-hidden">
-                        <img
-                          src={photo.url}
-                          alt={photo.filename}
-                          className="w-full h-full object-cover hover:opacity-75 transition-opacity cursor-pointer"
-                          onClick={() => {
-                            window.open(`/admin/events/${selectedEvent.id}/photos`, '_blank');
-                          }}
-                          onError={(e) => {
-                            const target = e.currentTarget as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `<div class="w-full h-full flex items-center justify-center text-xs text-gray-500 bg-red-100 dark:bg-red-900">${photo.filename.substring(0, 10)}${photo.filename.length > 10 ? '...' : ''}</div>`;
-                            }
-                          }}
-                        />
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                    <div className="flex items-center justify-center space-x-4">
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-2">
+                          <Images className="h-8 w-8 text-blue-600" />
+                        </div>
+                        <p className="text-sm font-medium">{eventPhotos.length} Photos</p>
+                        <p className="text-xs text-gray-500">Ready to view</p>
                       </div>
-                    ))}
-                    {eventPhotos.length > 8 && (
-                      <div 
-                        className="aspect-square bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      <div className="text-2xl text-gray-300">→</div>
+                      <Button
                         onClick={() => {
                           window.open(`/admin/events/${selectedEvent.id}/photos`, '_blank');
                         }}
+                        className="flex items-center gap-2"
                       >
-                        <div className="text-center">
-                          <div className="text-lg font-bold">+{eventPhotos.length - 8}</div>
-                          <div className="text-xs">more</div>
-                        </div>
-                      </div>
-                    )}
+                        <Eye className="h-4 w-4" />
+                        Open Gallery
+                      </Button>
+                    </div>
+                    <div className="mt-4 text-xs text-gray-500 text-center">
+                      Photo filenames: {eventPhotos.map(p => p.filename).join(', ')}
+                    </div>
                   </div>
                 </div>
               ) : (
