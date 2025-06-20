@@ -21,6 +21,13 @@ export default function PhotoGallery({ photos, columns = 4, eventId, showDeleteB
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  console.log('PhotoGallery render:', { 
+    photoCount: photos.length, 
+    eventId, 
+    showDeleteButton,
+    firstPhotoUrl: photos[0]?.url 
+  });
+
   // Delete photo mutation
   const deletePhotoMutation = useMutation({
     mutationFn: async (photoId: number) => {

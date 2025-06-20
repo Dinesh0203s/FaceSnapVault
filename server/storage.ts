@@ -115,10 +115,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteEvent(id: number): Promise<boolean> {
-    // First delete all photos associated with this event
-    await db.delete(photos).where(eq(photos.eventId, id));
+    // Get all photos for this event first
+    const eventPhotos = await this.getEventPhotos(id);
     
-    // Then delete the event
+    // Delete each photo properly (this will handle face vectors and matches)
+    for (const photo of eventPhotos) {
+      await this.deletePhoto(photo.id);
+    }
+    
+    // Delete any remaining event access records
+    await db.delete(eventAccess).where(eq(eventAccess.eventId, id));
+    
+    // Finally delete the event
     const result = await db.delete(events).where(eq(events.id, id));
     return (result.rowCount || 0) > 0;
   }
@@ -138,31 +146,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePhoto(id: number): Promise<boolean> {
-    // Get photo details first to delete the file
-    const photo = await this.getPhoto(id);
-    
-    // First delete all face vectors associated with this photo
-    await db.delete(faceVectors).where(eq(faceVectors.photoId, id));
-    
-    // Then delete any photo matches
-    await db.delete(photoMatches).where(eq(photoMatches.photoId, id));
-    
-    // Then delete the photo record
-    const result = await db.delete(photos).where(eq(photos.id, id));
-    
-    // Delete the physical file
-    if (photo && photo.url.startsWith('/uploads/')) {
-      const fs = await import('fs');
-      const path = await import('path');
-      const filePath = path.join(process.cwd(), photo.url);
-      try {
-        fs.unlinkSync(filePath);
-      } catch (error) {
-        console.warn(`Failed to delete file ${filePath}:`, error);
+    try {
+      // Get photo details first to delete the file
+      const photo = await this.getPhoto(id);
+      
+      // First delete all face vectors associated with this photo
+      await db.delete(faceVectors).where(eq(faceVectors.photoId, id));
+      
+      // Then delete any photo matches
+      await db.delete(photoMatches).where(eq(photoMatches.photoId, id));
+      
+      // Then delete the photo record
+      const result = await db.delete(photos).where(eq(photos.id, id));
+      
+      // Delete the physical file
+      if (photo && photo.url.startsWith('/uploads/')) {
+        const fs = await import('fs');
+        const path = await import('path');
+        const filePath = path.join(process.cwd(), photo.url);
+        try {
+          fs.unlinkSync(filePath);
+        } catch (error) {
+          console.warn(`Failed to delete file ${filePath}:`, error);
+        }
       }
+      
+      return (result.rowCount || 0) > 0;
+    } catch (error) {
+      console.error(`Error deleting photo ${id}:`, error);
+      throw error;
     }
-    
-    return (result.rowCount || 0) > 0;
   }
 
   async updatePhotoProcessed(id: number, processed: boolean): Promise<boolean> {
