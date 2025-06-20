@@ -21,6 +21,10 @@ export default function PhotoGallery({ photos, columns = 4, eventId, showDeleteB
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  console.log('--- Debug: Photos received by PhotoGallery ---');
+  console.log(JSON.stringify(photos, null, 2));
+  console.log('-------------------------------------------');
+
   console.log('PhotoGallery render:', { 
     photoCount: photos.length, 
     eventId, 
@@ -60,7 +64,7 @@ export default function PhotoGallery({ photos, columns = 4, eventId, showDeleteB
   };
 
   const deletePhoto = (photo: Photo) => {
-    if (confirm(`Are you sure you want to delete ${photo.filename}?`)) {
+    if (confirm(`Are you sure you want to delete "${photo.filename}"? This action cannot be undone and will permanently remove the photo from the event.`)) {
       deletePhotoMutation.mutate(photo.id);
     }
   };
@@ -92,7 +96,17 @@ export default function PhotoGallery({ photos, columns = 4, eventId, showDeleteB
 
   return (
     <>
-      <div className={`grid ${getGridCols()} gap-4`}>
+      <div className={`grid ${getGridCols()} gap-4 relative`}>
+        {deletePhotoMutation.isPending && (
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="text-sm font-medium">Deleting photo...</span>
+              </div>
+            </div>
+          </div>
+        )}
         {photos.map((photo) => (
           <div
             key={photo.id}

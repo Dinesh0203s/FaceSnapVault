@@ -10,10 +10,24 @@ import { sendEmail } from "./services/sendgrid";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { nanoid } from "nanoid";
 
 // Configure multer for file uploads
+const multerStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dest = 'uploads/';
+    fs.mkdirSync(dest, { recursive: true });
+    cb(null, dest);
+  },
+  filename: (req, file, cb) => {
+    const extension = path.extname(file.originalname);
+    const uniqueSuffix = nanoid();
+    cb(null, `${uniqueSuffix}${extension}`);
+  }
+});
+
 const upload = multer({
-  dest: 'uploads/',
+  storage: multerStorage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
@@ -124,51 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Serve uploaded files with proper MIME types
   const uploadsPath = path.resolve(process.cwd(), 'uploads');
-  app.use('/uploads', (req, res, next) => {
-    const filePath = path.join(uploadsPath, req.path);
-    
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).send('File not found');
-    }
-
-    // Read first few bytes to detect image type
-    try {
-      const buffer = fs.readFileSync(filePath, { encoding: null, flag: 'r' });
-      let mimeType = 'application/octet-stream';
-      
-      // Detect image type from file signature
-      if (buffer.length >= 3) {
-        // JPEG
-        if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
-          mimeType = 'image/jpeg';
-        }
-        // PNG
-        else if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
-          mimeType = 'image/png';
-        }
-        // GIF
-        else if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
-          mimeType = 'image/gif';
-        }
-        // WebP
-        else if (buffer.length >= 12 && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
-          mimeType = 'image/webp';
-        }
-        // Default to JPEG for uploaded photos
-        else {
-          mimeType = 'image/jpeg';
-        }
-      }
-      
-      res.setHeader('Content-Type', mimeType);
-      res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
-      res.sendFile(filePath);
-    } catch (error) {
-      console.error('Error serving uploaded file:', error);
-      res.status(500).send('Error serving file');
-    }
-  });
+  app.use('/uploads', express.static(uploadsPath));
 
   // Auth routes
   app.get('/api/auth/me', authenticateUser, async (req: any, res) => {
@@ -351,7 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const file of files) {
         // Create photo record
         const photo = await storage.createPhoto({
-          eventId,
+          eventId: eventId,
           filename: file.originalname,
           url: `/uploads/${file.filename}`,
           uploadedBy: req.user.id,

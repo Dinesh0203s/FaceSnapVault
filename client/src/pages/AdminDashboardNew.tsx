@@ -10,6 +10,7 @@ import BulkPhotoUpload from "@/components/BulkPhotoUpload";
 import CreateEventForm from "@/components/CreateEventForm";
 import { Event, Photo } from "@shared/schema";
 import { Calendar, Users, Images, CheckCircle, Edit, Upload, Trash2, Eye } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function AdminDashboard() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showUploadPhotos, setShowUploadPhotos] = useState<Event | null>(null);
   const [showBulkUpload, setShowBulkUpload] = useState<Event | null>(null);
+  const [editingEventName, setEditingEventName] = useState<{ id: number; name: string } | null>(null);
 
   // Redirect if not admin
   if (user?.role !== "admin") {
@@ -52,8 +54,8 @@ export default function AdminDashboard() {
   });
 
   // Fetch photos for selected event
-  const { data: photos = [] } = useQuery<Photo[]>({
-    queryKey: ["/api/events", selectedEvent?.id, "photos"],
+  const { data: photos = [], isLoading: photosLoading } = useQuery<Photo[]>({
+    queryKey: [`/api/events/${selectedEvent?.id}/photos`],
     enabled: !!selectedEvent,
   });
 
@@ -85,7 +87,7 @@ export default function AdminDashboard() {
       return apiRequest("DELETE", `/api/admin/photos/${photoId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/events", selectedEvent?.id, "photos"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/events/${selectedEvent?.id}/photos`] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({
         title: "Photo deleted successfully",
@@ -99,6 +101,55 @@ export default function AdminDashboard() {
       });
     },
   });
+
+  // Add updateEventName mutation
+  const updateEventNameMutation = useMutation({
+    mutationFn: async ({ eventId, name }: { eventId: number; name: string }) => {
+      const event = events.find(e => e.id === eventId);
+      if (!event) throw new Error("Event not found");
+      
+      return apiRequest("PUT", `/api/admin/events/${eventId}`, {
+        name,
+        code: event.code,
+        description: event.description || ""
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      setEditingEventName(null);
+      toast({
+        title: "Event name updated",
+        description: "The event name has been successfully updated"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update event name",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleEventNameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEventName) return;
+    
+    const trimmedName = editingEventName.name.trim();
+    if (!trimmedName) {
+      toast({
+        title: "Invalid name",
+        description: "Event name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    updateEventNameMutation.mutate({
+      eventId: editingEventName.id,
+      name: trimmedName
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
@@ -192,7 +243,40 @@ export default function AdminDashboard() {
                     className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
                   >
                     <div className="flex-1">
-                      <h3 className="font-semibold">{event.name}</h3>
+                      {editingEventName?.id === event.id ? (
+                        <form onSubmit={handleEventNameSubmit} className="flex items-center gap-2">
+                          <Input
+                            value={editingEventName.name}
+                            onChange={(e) => setEditingEventName({ id: event.id, name: e.target.value })}
+                            className="h-8 py-1 w-64"
+                            autoFocus
+                            onBlur={handleEventNameSubmit}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') {
+                                setEditingEventName(null);
+                              }
+                            }}
+                          />
+                        </form>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <h3 
+                            className="font-semibold cursor-pointer hover:text-blue-600"
+                            onClick={() => setEditingEventName({ id: event.id, name: event.name })}
+                          >
+                            {event.name}
+                          </h3>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingEventName({ id: event.id, name: event.name })}
+                            className="p-0 h-auto hover:bg-transparent"
+                            title="Edit Event Name"
+                          >
+                            <Edit className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                          </Button>
+                        </div>
+                      )}
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         Code: {event.code} • Created: {new Date(event.createdAt).toLocaleDateString()}
                       </p>
@@ -258,7 +342,12 @@ export default function AdminDashboard() {
             </CardHeader>
             
             <CardContent>
-              {photos.length === 0 ? (
+              {photosLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p>Loading photos...</p>
+                </div>
+              ) : photos.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">No photos uploaded yet</p>
                   <Button

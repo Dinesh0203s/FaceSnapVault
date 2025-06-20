@@ -16,6 +16,7 @@ import CreateEventForm from "@/components/CreateEventForm";
 import { Event, Photo, insertEventSchema } from "@shared/schema";
 import { Calendar, Users, Images, CheckCircle, Edit, Upload, Trash2, Settings, Eye, Download } from "lucide-react";
 import { z } from "zod";
+import { Input } from "@/components/ui/input";
 
 const eventFormSchema = insertEventSchema.extend({
   name: z.string().min(1, "Event name is required"),
@@ -31,6 +32,7 @@ export default function AdminDashboard() {
   const [showUploadPhotos, setShowUploadPhotos] = useState<Event | null>(null);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [showBulkUpload, setShowBulkUpload] = useState<Event | null>(null);
+  const [editingEventName, setEditingEventName] = useState<{ id: number; name: string } | null>(null);
 
   // Redirect if not admin
   if (user?.role !== "admin") {
@@ -68,10 +70,12 @@ export default function AdminDashboard() {
   });
 
   // Fetch photos for selected event
-  const { data: eventPhotos = [] } = useQuery<Photo[]>({
+  const { data: eventPhotos = [], isLoading: photosLoading } = useQuery<Photo[]>({
     queryKey: [`/api/events/${selectedEvent?.id}/photos`],
     enabled: !!selectedEvent,
   });
+
+  console.log("Event photos:", eventPhotos);
 
   // Create event mutation
   const createEventMutation = useMutation({
@@ -84,7 +88,7 @@ export default function AdminDashboard() {
       console.log('API response:', response);
       return response;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       console.log('Event created successfully:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
@@ -92,7 +96,6 @@ export default function AdminDashboard() {
         title: "Event created successfully",
         description: "Your new event is now active",
       });
-      setShowCreateEvent(false);
       form.reset();
     },
     onError: (error: any) => {
@@ -172,6 +175,52 @@ export default function AdminDashboard() {
     }
     
     createEventMutation.mutate(values);
+  };
+
+  // Add updateEventName mutation
+  const updateEventNameMutation = useMutation({
+    mutationFn: async ({ eventId, name }: { eventId: number; name: string }) => {
+      return apiRequest("PUT", `/api/admin/events/${eventId}`, { 
+        name,
+        code: events.find(e => e.id === eventId)?.code || "",
+        description: events.find(e => e.id === eventId)?.description || "" 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      setEditingEventName(null);
+      toast({
+        title: "Event name updated",
+        description: "The event name has been successfully updated",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update event name",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEventNameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEventName) return;
+    
+    const trimmedName = editingEventName.name.trim();
+    if (!trimmedName) {
+      toast({
+        title: "Invalid name",
+        description: "Event name cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateEventNameMutation.mutate({
+      eventId: editingEventName.id,
+      name: trimmedName,
+    });
   };
 
   return (
@@ -267,21 +316,41 @@ export default function AdminDashboard() {
                       <Calendar className="h-6 w-6 text-blue-600" />
                     </div>
                     <div>
-                      <h4 className="font-semibold">{event.name}</h4>
+                      {editingEventName?.id === event.id ? (
+                        <form onSubmit={handleEventNameSubmit} className="flex items-center gap-2">
+                          <Input
+                            value={editingEventName.name}
+                            onChange={(e) => setEditingEventName({ id: event.id, name: e.target.value })}
+                            className="h-7 py-1"
+                            autoFocus
+                            onBlur={handleEventNameSubmit}
+                          />
+                        </form>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <h4 
+                            className="font-semibold cursor-pointer hover:text-blue-600"
+                            onClick={() => setEditingEventName({ id: event.id, name: event.name })}
+                          >
+                            {event.name}
+                          </h4>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingEventName({ id: event.id, name: event.name })}
+                            className="p-0 h-auto hover:bg-transparent"
+                            title="Edit Event Name"
+                          >
+                            <Edit className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+                          </Button>
+                        </div>
+                      )}
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         Code: <span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{event.code}</span>
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setEditingEvent(event)}
-                      title="Edit Event"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -377,15 +446,6 @@ export default function AdminDashboard() {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      window.open(`/admin/events/${selectedEvent.id}/photos`, '_blank');
-                    }}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Photos
-                  </Button>
-                  <Button
-                    variant="outline"
                     onClick={() => setSelectedEvent(null)}
                   >
                     Close
@@ -394,35 +454,19 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {eventPhotos.length > 0 ? (
+              {photosLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p>Loading photos...</p>
+                </div>
+              ) : eventPhotos.length > 0 ? (
                 <div className="space-y-4">
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {eventPhotos.length} photos uploaded - Click "View Photos" to open full gallery in new tab
-                  </div>
-                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                    <div className="flex items-center justify-center space-x-4">
-                      <div className="text-center">
-                        <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-2">
-                          <Images className="h-8 w-8 text-blue-600" />
-                        </div>
-                        <p className="text-sm font-medium">{eventPhotos.length} Photos</p>
-                        <p className="text-xs text-gray-500">Ready to view</p>
-                      </div>
-                      <div className="text-2xl text-gray-300">→</div>
-                      <Button
-                        onClick={() => {
-                          window.open(`/admin/events/${selectedEvent.id}/photos`, '_blank');
-                        }}
-                        className="flex items-center gap-2"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Open Gallery
-                      </Button>
-                    </div>
-                    <div className="mt-4 text-xs text-gray-500 text-center">
-                      Photo filenames: {eventPhotos.map(p => p.filename).join(', ')}
-                    </div>
-                  </div>
+                  <PhotoGallery 
+                    photos={eventPhotos} 
+                    columns={4}
+                    eventId={selectedEvent.id}
+                    showDeleteButton={true}
+                  />
                 </div>
               ) : (
                 <div className="text-center py-12">
