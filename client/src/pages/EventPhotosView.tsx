@@ -119,22 +119,23 @@ export default function EventPhotosView() {
                     loading="lazy"
                     onClick={() => setSelectedPhoto(photo)}
                     onError={(e) => {
-                      console.error('Photo failed to load:', photo.url);
+                      console.error('EventPhotosView: Image failed to load:', photo.url, photo.filename);
                       const target = e.currentTarget as HTMLImageElement;
                       target.style.display = 'none';
                       const parent = target.parentElement;
                       if (parent) {
                         parent.innerHTML = `
-                          <div class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 p-4">
+                          <div class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 p-4 bg-red-50 dark:bg-red-900">
                             <div class="text-red-500 text-2xl mb-2">⚠</div>
-                            <div class="text-xs text-center break-all">${photo.filename}</div>
-                            <div class="text-xs mt-1">Failed to load</div>
+                            <div class="text-xs text-center break-all font-mono">${photo.filename}</div>
+                            <div class="text-xs mt-1">Image load failed</div>
+                            <div class="text-xs mt-1 opacity-75">${photo.url}</div>
                           </div>
                         `;
                       }
                     }}
                     onLoad={() => {
-                      console.log('Photo loaded successfully:', photo.url);
+                      console.log('EventPhotosView: Image loaded successfully:', photo.url, photo.filename);
                     }}
                   />
                   

@@ -112,6 +112,12 @@ The system uses five main tables:
 
 ## Changelog
 - June 18, 2025. Initial setup
+- June 20, 2025. Enhanced admin photo management with dedicated EventPhotosView page
+  - Created EventPhotosView page for full-screen photo gallery
+  - Added "View Photos" button in admin dashboard that opens new tab
+  - Implemented proper image loading with detailed error handling
+  - Fixed admin dashboard photo preview with simplified display
+  - Added comprehensive photo management features (view, download, delete)
 
 ## User Preferences
 
