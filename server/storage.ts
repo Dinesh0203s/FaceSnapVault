@@ -120,7 +120,7 @@ export class DatabaseStorage implements IStorage {
     
     // Then delete the event
     const result = await db.delete(events).where(eq(events.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async getEventPhotos(eventId: number): Promise<Photo[]> {
@@ -170,7 +170,7 @@ export class DatabaseStorage implements IStorage {
       .update(photos)
       .set({ processed })
       .where(eq(photos.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async getFaceVectorsByPhotoId(photoId: number): Promise<FaceVector[]> {
@@ -228,7 +228,7 @@ export class DatabaseStorage implements IStorage {
       .update(photoMatches)
       .set({ emailSent: true })
       .where(eq(photoMatches.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async createEventAccess(eventAccessData: InsertEventAccess): Promise<EventAccess> {

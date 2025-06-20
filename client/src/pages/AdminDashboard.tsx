@@ -149,26 +149,7 @@ export default function AdminDashboard() {
     },
   });
 
-  // Delete photo mutation
-  const deletePhotoMutation = useMutation({
-    mutationFn: async (photoId: number) => {
-      return apiRequest("DELETE", `/api/admin/photos/${photoId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/events/${selectedEvent?.id}/photos`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      toast({
-        title: "Photo deleted successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to delete photo",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  // Delete photo mutation is now handled by PhotoGallery component
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
@@ -404,34 +385,13 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {eventPhotos.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {eventPhotos.map((photo) => (
-                    <div key={photo.id} className="relative group">
-                      <img
-                        src={photo.url}
-                        alt={photo.filename}
-                        className="w-full h-48 object-cover rounded-lg"
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all rounded-lg flex items-center justify-center">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => {
-                            if (confirm(`Delete ${photo.filename}?`)) {
-                              deletePhotoMutation.mutate(photo.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1 truncate">{photo.filename}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
+              <PhotoGallery 
+                photos={eventPhotos} 
+                columns={4} 
+                eventId={selectedEvent.id}
+                showDeleteButton={true}
+              />
+              {eventPhotos.length === 0 && (
                 <div className="text-center py-12">
                   <Images className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No photos yet</h3>

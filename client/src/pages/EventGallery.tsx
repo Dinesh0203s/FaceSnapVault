@@ -114,7 +114,7 @@ export default function EventGallery() {
 
         {/* Photo Gallery */}
         <div className="bg-white dark:bg-gray-900">
-          <PhotoGallery photos={photos} columns={4} />
+          <PhotoGallery photos={photos} columns={4} eventId={event.id} />
         </div>
 
         {photos.length === 0 && (
