@@ -10,7 +10,7 @@ interface FaceMatch {
 export async function findFaceMatches(
   targetFace: FaceDetection,
   eventFaceVectors: FaceVector[],
-  threshold: number = 0.7
+  threshold: number = 0.5
 ): Promise<FaceMatch[]> {
   const matches: FaceMatch[] = [];
   
@@ -32,7 +32,7 @@ export async function findFaceMatches(
   // Sort by confidence (highest first) and limit results
   return matches
     .sort((a, b) => b.confidence - a.confidence)
-    .slice(0, 50); // Limit to top 50 matches
+    .slice(0, 20); // Limit to top 20 matches for better performance
 }
 
 function calculateCosineSimilarity(vectorA: number[], vectorB: number[]): number {

@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -10,8 +13,16 @@ import PhotoGallery from "@/components/PhotoGallery";
 import BulkPhotoUpload from "@/components/BulkPhotoUpload";
 import EventEditDialog from "@/components/EventEditDialog";
 import CreateEventForm from "@/components/CreateEventForm";
-import { Event, Photo } from "@shared/schema";
+import { Event, Photo, insertEventSchema } from "@shared/schema";
 import { Calendar, Users, Images, CheckCircle, Edit, Upload, Trash2, Settings, Eye } from "lucide-react";
+import { z } from "zod";
+
+const eventFormSchema = insertEventSchema.extend({
+  name: z.string().min(1, "Event name is required"),
+  code: z.string().min(1, "Event code is required"),
+});
+
+type EventFormValues = z.infer<typeof eventFormSchema>;
 
 export default function AdminDashboard() {
   const { user, firebaseUser } = useAuth();
@@ -58,7 +69,7 @@ export default function AdminDashboard() {
 
   // Fetch photos for selected event
   const { data: eventPhotos = [] } = useQuery<Photo[]>({
-    queryKey: ["/api/events", selectedEvent?.id, "photos"],
+    queryKey: [`/api/events/${selectedEvent?.id}/photos`],
     enabled: !!selectedEvent,
   });
 
@@ -144,7 +155,7 @@ export default function AdminDashboard() {
       return apiRequest("DELETE", `/api/admin/photos/${photoId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/events", selectedEvent?.id, "photos"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/events/${selectedEvent?.id}/photos`] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({
         title: "Photo deleted successfully",
@@ -354,7 +365,7 @@ export default function AdminDashboard() {
                 eventId={showBulkUpload.id}
                 onUploadComplete={() => {
                   queryClient.invalidateQueries({ 
-                    queryKey: ["/api/events", showBulkUpload.id, "photos"] 
+                    queryKey: [`/api/events/${showBulkUpload.id}/photos`] 
                   });
                   queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
                   setShowBulkUpload(null);

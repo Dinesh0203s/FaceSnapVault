@@ -97,6 +97,13 @@ export default function PhotoGallery({ photos, columns = 4, eventId, showDeleteB
               alt={photo.filename}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
+              onError={(e) => {
+                console.error('Failed to load image:', photo.url);
+                e.currentTarget.style.display = 'none';
+              }}
+              onLoad={() => {
+                console.log('Image loaded successfully:', photo.url);
+              }}
             />
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-end">
               <div className="p-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">

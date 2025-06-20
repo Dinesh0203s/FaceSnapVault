@@ -138,14 +138,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePhoto(id: number): Promise<boolean> {
+    // Get photo details first to delete the file
+    const photo = await this.getPhoto(id);
+    
     // First delete all face vectors associated with this photo
     await db.delete(faceVectors).where(eq(faceVectors.photoId, id));
     
     // Then delete any photo matches
     await db.delete(photoMatches).where(eq(photoMatches.photoId, id));
     
-    // Then delete the photo
+    // Then delete the photo record
     const result = await db.delete(photos).where(eq(photos.id, id));
+    
+    // Delete the physical file
+    if (photo && photo.url.startsWith('/uploads/')) {
+      const fs = await import('fs');
+      const path = await import('path');
+      const filePath = path.join(process.cwd(), photo.url);
+      try {
+        fs.unlinkSync(filePath);
+      } catch (error) {
+        console.warn(`Failed to delete file ${filePath}:`, error);
+      }
+    }
+    
     return (result.rowCount || 0) > 0;
   }
 

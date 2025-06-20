@@ -398,21 +398,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get face vectors for the event
       const eventFaceVectors = await storage.getFaceVectorsByEventId(parseInt(eventId));
       
-      // Find matches
+      // Find matches with improved algorithm
       const matches = await findFaceMatches(selfieFaces[0], eventFaceVectors);
       
-      // Save matches to database
+      console.log(`Found ${matches.length} potential matches for user ${req.user.id}`);
+      
+      // Save matches to database (only save matches above 60% confidence)
       const savedMatches = [];
       for (const match of matches) {
-        const photoMatch = await storage.createPhotoMatch({
-          userId: req.user.id,
-          photoId: match.photoId,
-          eventId: parseInt(eventId),
-          confidence: Math.round(match.confidence * 100),
-          selfieUrl: `/uploads/${selfieFile.filename}`,
-          emailSent: false,
-        });
-        savedMatches.push(photoMatch);
+        if (match.confidence >= 0.6) {
+          const photoMatch = await storage.createPhotoMatch({
+            userId: req.user.id,
+            photoId: match.photoId,
+            eventId: parseInt(eventId),
+            confidence: Math.round(match.confidence * 100),
+            selfieUrl: `/uploads/${selfieFile.filename}`,
+            emailSent: false,
+          });
+          savedMatches.push(photoMatch);
+        }
       }
 
       // Send email notification (in background)
